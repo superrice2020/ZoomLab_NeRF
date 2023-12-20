@@ -1,2 +1,2 @@
 # ZoomLab_NeRF
-NeRF代码讲解
+![](https://github.com/superrice2020/ZoomLab_NeRF/blob/main/images/logo.jpg)
