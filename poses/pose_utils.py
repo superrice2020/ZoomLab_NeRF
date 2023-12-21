@@ -128,7 +128,7 @@ def save_poses(basedir, poses, pts3d, perm):
     save_arr = np.array(save_arr)
     
     np.save(os.path.join(basedir, 'poses_bounds.npy'), save_arr)
-
+    print('已生成poses_bounds.npy文件')
 
 '''
 总的方法，包括运行colmap、读取colmap数据以及将数据转化为NeRF的形式进行保存
@@ -152,7 +152,6 @@ def gen_poses(basedir, match_type):
     poses, pts3d, perm = load_colmap_data(basedir)
     # 将数据转换成NeRF格式并保存
     save_poses(basedir, poses, pts3d, perm)
-    print('已生成poses_bounds.npy文件')
     return True
     
 if __name__ == '__main__':
