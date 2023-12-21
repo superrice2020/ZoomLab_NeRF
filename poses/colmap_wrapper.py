@@ -2,7 +2,7 @@ import os
 import subprocess
 
 
-
+# COLMAP官方文档：https://colmap.github.io/cameras.html
 # $ DATASET_PATH=/path/to/dataset
 
 # 图像特征提取
@@ -33,7 +33,7 @@ def run_colmap(basedir, match_type):
         'colmap.bat', 'feature_extractor',
             '--database_path', os.path.join(basedir, 'database.db'), 
             '--image_path', os.path.join(basedir, 'images'),
-            '--ImageReader.camera_model', 'OPENCV',
+            '--ImageReader.camera_model', 'SIMPLE_PINHOLE',
             '--ImageReader.single_camera', '1',
             '--SiftExtraction.use_gpu', '0',
     ]

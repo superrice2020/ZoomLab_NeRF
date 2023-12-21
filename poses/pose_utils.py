@@ -89,7 +89,7 @@ def save_poses(basedir, poses, pts3d, perm):
         ids = list(range(0, len(images), 1))
         ids_unused = [i for i in ids if i not in inds]
         images_unused = [images[i] for i in ids_unused]
-        print('以下图片未匹配上，请删除“sparse”文件夹、colmap_output.txt、database.db以及这些图片后从头执行')
+        print(f'以下{len(images_unused)}张图片未匹配上，请删除“sparse”文件夹、colmap_output.txt、database.db以及这些图片后从头执行')
         print('images_unused:', images_unused)
         return
     # 遍历所有的点，记录每一个点与哪些相机位姿关联
@@ -157,4 +157,4 @@ def gen_poses(basedir, match_type):
     
 if __name__ == '__main__':
     # 传入的路径下需要有images文件夹，图片放在此文件夹内
-    gen_poses(r'E:\datasets\nerf\test', match_type='exhaustive_matcher')
+    gen_poses(r'D:\code\Nerf\nerf_test', match_type='exhaustive_matcher')
