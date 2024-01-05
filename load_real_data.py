@@ -97,8 +97,8 @@ def poses_avg(poses):
     return c2w
 
 '''
-这个函数与训练无关，仅用于验证，不改变原有视角，仅仅是用于生成新的相机视角，此方法生成的是一段螺旋式的相机轨迹，相机绕着一个轴旋转，
-其中相机始终注视着一个焦点，相机的up轴保持不变，此方法适用于faceforward场景
+这个函数与训练无关，仅用于验证，不改变原有视角，仅仅是用于生成新的相机视角，此方法生成的是一圈/两圈螺旋式的相机轨迹，
+其中相机始终注视着一个焦点，此方法适用于faceforward场景
 来自：https://github.com/Fyusion/LLFF/blob/master/llff/math/pose_math.py
 '''
 def render_path_spiral(c2w, up, rads, focal, zrate, N_rots, N_views):
