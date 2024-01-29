@@ -52,7 +52,7 @@ def normalize_matrix(x):
 '''
 def view_matrix(z, up, pos):
     '''
-    相机外参矩阵：
+    相机矩阵：
     (X) (Y-up) (Z)  (pos)
     r11  r12   r12   t1
     r21  r22   r23   t2
@@ -97,8 +97,8 @@ def poses_avg(poses):
     return c2w
 
 '''
-这个函数与训练无关，仅用于验证，不改变原有视角，仅仅是用于生成新的相机视角，此方法生成的是一圈/两圈螺旋式的相机轨迹，
-其中相机始终注视着一个焦点，此方法适用于faceforward场景
+此方法适用于faceforward场景，这个函数与训练无关，仅用于验证，不改变原有视角，仅仅是用于生成新的相机视角，此方法生成的是一段螺旋式的相机轨迹，
+相机绕着一个轴旋转，其中相机始终注视着一个焦点。
 来自：https://github.com/Fyusion/LLFF/blob/master/llff/math/pose_math.py
 '''
 def render_path_spiral(c2w, up, rads, focal, zrate, N_rots, N_views):
@@ -129,7 +129,7 @@ def render_path_spiral(c2w, up, rads, focal, zrate, N_rots, N_views):
 
 
 '''
-输入N个相机位姿，返回N个相机位姿，变换后N个相机的平均位置处在世界坐标系原点，平均相机位姿的远点与世界坐标系远点一致，XYZ轴与世界坐标系保持一致
+输入N个相机位姿，返回N个相机位姿，变换后N个相机的平均位置处在世界坐标系原点，平均相机位姿的原点与世界坐标系原点一致，XYZ轴与世界坐标系保持一致
 这样也算是归一化的一种方式。。。吧
 作者自己的解释：https://github.com/bmild/nerf/issues/34
 '''
@@ -327,14 +327,14 @@ def _load_data(basedir, factor=1):
 '''
 读取真实数据格式的数据
 '''
-def load_real_data(basedir, factor=8, recenter=True, bd_factor=0.75, spherify=False, path_zflat=False):
+def load_real_data(basedir, factor=8, recenter=True, spherify=False, path_zflat=False, bd_factor=0.75):
     '''
     :param basedir: 文件夹路径
     :param factor: 图片的下采样倍率
     :param recenter: 是否将所有相机的位姿做中心化，具体操作看recenter_poses方法
-    :param bd_factor: 边界的缩放系数，用于乘以平移向量以及边界bds
-    :param spherify: 是否将相机视角变为球形环绕视角，仅在环绕视角时使用
+    :param spherify: 用于处理环绕视角数据
     :param path_zflat: 新生成的相机视角的z坐标值是否都为0
+    :param bd_factor: 用于确保场景到相机的最小距离大于1，与后续的args.ndc配合使用
     :return:
     '''
     # 读取相机参数和图片，每张图片对应一个相机参数
@@ -352,8 +352,9 @@ def load_real_data(basedir, factor=8, recenter=True, bd_factor=0.75, spherify=Fa
     # [2, N_images] --> [N_images, 2]
     bds = np.moveaxis(bds, -1, 0).astype(np.float32)
 
-    # 重缩放场景大小
-    sc = 1. if bd_factor is None else 1./(bds.min() * bd_factor)
+    # 这个缩放是针对face forward场景，为了配合NDC使用，因为NDC要求整个场景必须位于z=-near平面之后，
+    # 这里是将场景到相机的最小距离被缩放为1（因为在NeRF中设定近平面为z=-1），再通过bd_factor确保距离大于1
+    sc = 1. if bd_factor is None else 1. / (bds.min() * bd_factor)
     # 平移向量乘以缩放系数
     poses[:, :3, 3] *= sc
     # 边界范围乘以缩放系数
@@ -375,9 +376,11 @@ def load_real_data(basedir, factor=8, recenter=True, bd_factor=0.75, spherify=Fa
         # 获取所有相机位姿up向量的平均
         up = normalize_matrix(poses[:, :3, 1].sum(0))
         # 得到一个适合的焦点
-        close_depth, inf_depth = bds.min() * 0.9, bds.max() * 5.
-        dt = 0.75
-        focal = 1./((1.-dt)/close_depth + dt/inf_depth)
+        close_depth, inf_depth = bds.min() * 0.9, bds.max() * 2.
+        dt = 0.5
+        # 源代码是通过视差取焦点，经实验，直接通过深度也可以
+        # focal = 1./((1.-dt)/close_depth + dt/inf_depth)
+        focal = close_depth + (inf_depth - close_depth) * dt
 
         # 各相机的位置
         pts = poses[:, :3, 3]
@@ -390,9 +393,9 @@ def load_real_data(basedir, factor=8, recenter=True, bd_factor=0.75, spherify=Fa
         N_rots = 2
         # 是否保持生成的相机原点坐标z值为0，仅在xy平面上生成
         if path_zflat:
-            zloc = -close_depth * 0.1
+            # zloc = -close_depth * 0.1
             # 将所有相机都沿着z轴往靠近场景的方向移动一小点距离
-            c2w_path[:3, 3] = c2w_path[:3, 3] + zloc * c2w_path[:3, 2]
+            # c2w_path[:3, 3] = c2w_path[:3, 3] + zloc * c2w_path[:3, 2]
             # z轴设为0
             rads[2] = 0.
             # 只生成1圈
@@ -408,3 +411,6 @@ def load_real_data(basedir, factor=8, recenter=True, bd_factor=0.75, spherify=Fa
 
     return images, poses, bds, render_poses
 
+
+if __name__ == '__main__':
+    print('123')
